@@ -33,7 +33,7 @@ class TopicsController < ApplicationController
       .select("SUM(CASE WHEN votes.value > 0 THEN votes.value ELSE 0 END) AS pos_sum")
       .select("SUM(CASE WHEN votes.value < 0 THEN votes.value ELSE 0 END) AS neg_sum")
       .select("SUM(votes.value) AS sum")
-      .select("SUM(CASE WHEN votes.user_id = #{@user_id} THEN 1 ELSE 0 END) AS isVoted")
+      .select("SUM(CASE WHEN votes.user_id = #{@user_id} THEN 1 ELSE 0 END) AS is_voted")
       .group("topics.id")
       .order("SUM(votes.value) DESC")
     # @topics = Topic.joins(:votes).group('topics.id').order('SUM(votes.value) DESC')

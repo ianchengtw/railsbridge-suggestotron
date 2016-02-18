@@ -27,7 +27,7 @@
           <td><%= topic.neg_sum %></td>
           <td><%= topic.sum %></td>
 
-          <% if topic.isVoted > 0 %>
+          <% if topic.is_voted > 0 %>
             <td><%= link_to("Revote", revote_topic_path(topic), class: 'btn btn-default btn-xs', method: :post) %></td>
             <td></td>
             <td></td>
