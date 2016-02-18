@@ -11,8 +11,31 @@ class TopicsController < ApplicationController
       @user_id = -1
     end
 
-    sql = "SELECT T.id ,T.title ,T.votes_count ,SUM(CASE WHEN V.value > 0 THEN V.value ELSE 0 END) AS pos_sum ,SUM(CASE WHEN V.value < 0 THEN V.value ELSE 0 END) AS neg_sum ,SUM(V.value) AS sum ,SUM(CASE WHEN V.user_id = #{@user_id} THEN 1 ELSE 0 END) AS isVoted FROM topics AS T LEFT JOIN votes AS V ON T.id = V.topic_id GROUP BY T.id ORDER BY SUM(V.value) DESC"
-    @topics = Topic.find_by_sql(sql)
+    # sql = "
+    #   SELECT
+    #     T.id
+    #     ,T.title
+    #     ,T.votes_count
+    #     ,SUM(CASE WHEN V.value > 0 THEN V.value ELSE 0 END) AS pos_sum
+    #     ,SUM(CASE WHEN V.value < 0 THEN V.value ELSE 0 END) AS neg_sum
+    #     ,SUM(V.value) AS sum
+    #     ,SUM(CASE WHEN V.user_id = #{@user_id} THEN 1 ELSE 0 END) AS isVoted
+    #   FROM topics AS T
+    #   LEFT JOIN votes AS V ON T.id = V.topic_id
+    #   GROUP BY T.id
+    #   ORDER BY SUM(V.value) DESC
+    # "
+    # @topics = Topic.find_by_sql(sql)
+    @topics = Topic.joins("LEFT JOIN votes ON topics.id = votes.topic_id")
+      .select("topics.id")
+      .select("topics.title")
+      .select("topics.votes_count")
+      .select("SUM(CASE WHEN votes.value > 0 THEN votes.value ELSE 0 END) AS pos_sum")
+      .select("SUM(CASE WHEN votes.value < 0 THEN votes.value ELSE 0 END) AS neg_sum")
+      .select("SUM(votes.value) AS sum")
+      .select("SUM(CASE WHEN votes.user_id = #{@user_id} THEN 1 ELSE 0 END) AS isVoted")
+      .group("topics.id")
+      .order("SUM(votes.value) DESC")
     # @topics = Topic.joins(:votes).group('topics.id').order('SUM(votes.value) DESC')
     # @topics = Topic.all.order('votes_count DESC')
   end
