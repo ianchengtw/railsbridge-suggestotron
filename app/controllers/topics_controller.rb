@@ -1,10 +1,33 @@
 class TopicsController < ApplicationController
+  before_action :authenticate_user!, only: [:new, :create, :edit, :update, :destroy, :upvote, :devote]
   before_action :set_topic, only: [:show, :edit, :update, :destroy]
 
   # GET /topics
   # GET /topics.json
   def index
-    @topics = Topic.all
+    if current_user
+      @user_id = current_user.id
+    else
+      @user_id = -1
+    end
+
+    sql = "
+      SELECT
+        T.id
+        ,T.title
+        ,T.votes_count
+        ,SUM(CASE WHEN V.value > 0 THEN V.value ELSE 0 END) AS pos_sum
+        ,SUM(CASE WHEN V.value < 0 THEN V.value ELSE 0 END) AS neg_sum
+        ,SUM(V.value) AS sum
+        ,SUM(CASE WHEN V.user_id = #{@user_id} THEN 1 ELSE 0 END) AS isVoted
+      FROM topics AS T
+      LEFT JOIN votes AS V ON T.id = V.topic_id
+      GROUP BY T.id
+      ORDER BY SUM(V.value) DESC
+    "
+    @topics = Topic.find_by_sql(sql)
+    # @topics = Topic.joins(:votes).group('topics.id').order('SUM(votes.value) DESC')
+    # @topics = Topic.all.order('votes_count DESC')
   end
 
   # GET /topics/1
@@ -63,13 +86,43 @@ class TopicsController < ApplicationController
 
   def upvote
     @topic = Topic.find(params[:id])
-    @topic.votes.create
+    @vote = @topic.votes.build
+    @vote.voter = current_user
+    @vote.value = 1
+
+    if @vote.save
+      flash[:notice] = 'Vote Success'
+    else
+      flash[:alert] = 'Vote Failed'
+    end
+
     redirect_to(topics_path)
   end
 
   def devote
     @topic = Topic.find(params[:id])
-    @topic.votes.first.destroy
+    @vote = @topic.votes.build
+    @vote.voter = current_user
+    @vote.value = -1
+
+    if @vote.save
+      flash[:notice] = 'Vote Success'
+    else
+      flash[:alert] = 'Vote Failed'
+    end
+
+    redirect_to(topics_path)
+  end
+
+  def revote
+    @topic = Topic.find(params[:id])
+    @votes = @topic.votes.where(user_id: current_user.id)
+    @votes.each do |v|
+      v.destroy
+    end
+
+    flash[:notice] = 'Removed Vote'
+
     redirect_to(topics_path)
   end
 
